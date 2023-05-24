@@ -1,0 +1,14 @@
+version: '2'
+
+services:
+  janus-gateway:
+    image: canyan/janus-gateway:master_c3c7ffb61c46bedcd4008ac73de840b3ef415563
+    ports:
+      - "80:80"
+      - "7088:7088"
+      - "8088:8088"
+      - "8188:8188"
+      - "8089:8089"
+      - "10000-10200:10000-10200/udp"
+    environment:
+      - DOCKER_IP=${DOCKER_IP}

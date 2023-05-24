@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Janus Java client test site</title>
+    <link rel="stylesheet" type="text/css" href="./style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="./main.js"></script>
+</head>
+
+<body>
+    <main>
+        <h1>Janus Stream</h1>
+        <div class="tabcontent" id="connect-to-server">
+            <form>
+                <label for="server">Server address:</label>
+                <input type="text" id="server" name="server" value="ws://localhost:7070/signaling"><br><br>
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name"><br><br>
+                <input type="submit" value="Connect">
+                <input type="button" id="joinRoom" value="Join Room as Publisher">
+                <input type="button" id="joinRoomWithSub" value="Join Room as Subscriber">
+                <input type="button" id="start-streaming" value="Start Stream">
+                <input type="button" id="stop-streaming" value="Stop Stream">
+                <textarea style="height: 200px; width: 100%;" id="result" value=""></textarea>
+
+            </form>
+        </div>
+        <div>
+            <div class="card-container">
+                <div class="card" id="ownerStream">
+                    <video id="ownerStreamVideo" controls height="500" width="500"></video>
+
+                    <h3>Stream Owner</h3>
+                    <p>Status: <span id="ownerStreamStatus" class="status inactive">Inactive</span></p>
+                </div>
+                <div class="card" id="subscriberStream">
+                    <video id="subscriberStreamVideo" controls height="500" width="500"></video>
+                    <h3>Stream Subscriber</h3>
+                    <p>Status: <span id="subscriberStreamStatus" class="status inactive">Inactive</span></p>
+                </div>
+                <!-- Thêm các thẻ card khác ở đây... -->
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>
