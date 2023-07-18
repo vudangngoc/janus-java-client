@@ -1,25 +1,73 @@
 $(document).ready(function () {
     const localVideo = document.getElementById('ownerStreamVideo');
     const remoteVideo = document.getElementById('subscriberStreamVideo');
+
+    
+
     // Tạo biến socket
     var socket = null;
     // khởi tạo Peer Connection
-    var peerConnection = new RTCPeerConnection();
-    peerConnection.ontrack = function (event) {
-        console.log('onTrack')
-        remoteVideo.srcObject = event.streams[0];
+    var peerConnection = new RTCPeerConnection(
+        {'iceServers': [{
+            'urls': 'stun:stun.l.google.com:19302'
+          }]}
+    );
+    // peerConnection.ontrack = function (event) {
+    //     console.log('onTrack')
+    //     remoteVideo.srcObject = event.streams[0];
+    // };
+    // peerConnection.ontrack = event => {
+    //     const stream = event.streams[0];
+    //     remoteVideo.srcObject = stream;
+    //     remoteVideo.play();
+    //     // const videoElement = document.querySelector('video');
+    //     // if ('srcObject' in videoElement) {
+    //     //     videoElement.srcObject = stream;
+    //     // } else {
+    //     //     videoElement.src = URL.createObjectURL(stream);
+    //     // }
+    // };
+
+    peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+            sendToWebSocket(JSON.stringify({
+                "plugin": "video_room", "type": "connection_info", "ice_candidate": event.candidate
+            }))
+        }
     };
-    peerConnection.ontrack = event => {
-        const stream = event.streams[0];
-        remoteVideo.srcObject = stream;
-        remoteVideo.play();
-        // const videoElement = document.querySelector('video');
-        // if ('srcObject' in videoElement) {
-        //     videoElement.srcObject = stream;
-        // } else {
-        //     videoElement.src = URL.createObjectURL(stream);
-        // }
-    };
+
+    peerConnection.onnegotiationneeded = (event) => {
+        console.log("On Negotiation Need: " + JSON. stringify(event));
+    }
+
+    peerConnection.onicecandidateerror = (event) => {
+        console.log("On ICE Negotiation Failure: " + JSON. stringify(event));
+    }
+
+    peerConnection.onsignalingstatechange = (event) => {
+        console.log("On Signaling state change: " + JSON. stringify(event));
+    }
+
+    peerConnection.onconnectionstatechange  = (event) => {
+        console.log("On Conection state change: " + JSON. stringify(event));
+    }
+
+    peerConnection.addEventListener("icegatheringstatechange", (ev) => {
+        switch (peerConnection.iceGatheringState) {
+          case "new":
+            /* gathering is either just starting or has been reset */
+            break;
+          case "gathering":
+            /* gathering has begun or is ongoing */
+            break;
+          case "complete":
+            /* gathering has ended */
+            console.log("On Finish ICE gathering: " + JSON. stringify(ev));
+            sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "ice_complete"}))
+            break;
+        }
+      });
+    
     // Ẩn toàn bộ phần nội dung trừ phần nội dung của tab hiện tại
     $(".tabcontent:not(:first)").hide();
 
@@ -51,7 +99,7 @@ $(document).ready(function () {
     $('#joinRoom').on('click', function () {
         var name = $('#name').val();
         // connectToWebSocket();
-        sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "join_room", "room_name": 1090575864348547, "role": "publisher", "display_name": name }))
+        sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "join_room", "room_name": 1234, "role": "publisher", "display_name": name }))
     })
     // Khi click vào nút Join Room with subscriber
     $('#joinRoomWithSub').on('click', function () {
@@ -67,8 +115,8 @@ $(document).ready(function () {
                 window.localStream = stream;
 
                 // Hiển thị stream lên video elemen
-                // localVideo.srcObject = stream;
-                // localVideo.play();
+                localVideo.srcObject = stream;
+                localVideo.play();
                 // Tạo peer connection
                 $('#ownerStreamStatus').removeClass('inactive').addClass('active')
                 $('#ownerStreamStatus').html('Live')
@@ -128,6 +176,7 @@ $(document).ready(function () {
             displayResult("Received message: " + event.data)
             switch (message.type) {
                 case "join_room_result":
+                    subcribeAPublisher(JSON.parse(event.data).publishers[0])
                     break
                 case "publish_stream_result":
                     handleStartStreamResult(message)
@@ -142,6 +191,12 @@ $(document).ready(function () {
             console.log("Websocket closed.");
         };
     }
+    function subcribeAPublisher(publisher) {
+        if(publisher){
+            displayResult("Subscribing: " + JSON.stringify(publisher))
+            sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "join_room", "room_name": 1234, "role": "subscriber", "display_name": $('#name').val(), "feeds":[publisher.id] }))
+        }
+    }
     function handleStartStreamResult(message) {
         if (message.sdp !== undefined) {
             var answer = new RTCSessionDescription({
@@ -149,18 +204,11 @@ $(document).ready(function () {
                 type: 'answer'
             }
             );
-            peerConnection.setRemoteDescription(answer);
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
-                    sendToWebSocket(JSON.stringify({
-                        "plugin": "video_room", "type": "connection_info", "ice_candidate": [{
-                            "candidate": event.candidate,
-                            "sdpMid": "0",
-                            "sdpMLineIndex": 0
-                        }]
-                    }))
-                }
-            };
+            console.log("Set answer SDP to remote description");
+            peerConnection.setRemoteDescription(answer).catch(function(error) {
+                console.log('Error set SDP answer:', error);
+              });//.then(() => createMyStream());
+            
 
         }
     }

@@ -2,7 +2,7 @@ version: '2'
 
 services:
   janus-gateway:
-    image: canyan/janus-gateway:master_c3c7ffb61c46bedcd4008ac73de840b3ef415563
+    image: canyan/janus-gateway:0.10.7
     ports:
       - "80:80"
       - "7088:7088"

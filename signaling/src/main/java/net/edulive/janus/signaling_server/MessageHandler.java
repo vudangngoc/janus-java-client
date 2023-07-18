@@ -74,7 +74,10 @@ public class MessageHandler {
                 }
                 videoRoomAdaptor.sendConnectionInfo(janusSessionId,
                         sessionToHandle.get(janusSessionId),
-                        json.getJSONArray("ice_candidate"));
+                        json.getJSONObject("ice_candidate"));
+                break;
+            case "ice_complete":
+                videoRoomAdaptor.sendCompleteIceGathering(janusSessionId, sessionToHandle.get(janusSessionId));
                 break;
             case "unpublish":
                 videoRoomAdaptor.stopPublishStream(janusSessionId, sessionToHandle.get(janusSessionId));

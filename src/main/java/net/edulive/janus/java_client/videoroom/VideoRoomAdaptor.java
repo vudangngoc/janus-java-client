@@ -177,16 +177,20 @@ public class VideoRoomAdaptor {
      *
      * @param sessionId Janus sessionId of user
      * @param handleId Unique Id of user in the context of plugin, created when user attach to plugin
-     * @param candidates List of ICE candidates ready for connect
+     * @param candidate ICE candidate ready for connect
      */
-    public void sendConnectionInfo(Long sessionId, Long handleId, JSONArray candidates) {
+    public void sendConnectionInfo(Long sessionId, Long handleId, JSONObject candidate) {
         String transactionId = UUID.randomUUID().toString();
         JSONObject origin = new JSONObject().put(JANUS_JANUS, "trickle").put(JANUS_HANDLE_ID, handleId);
         DoNothingHandler handler = new DoNothingHandler(transactionId, sessionId);
-        candidates.forEach(candidate -> {
-            JSONObject connectionInfo = origin.put("candidate", candidate);
-            janusClient.sendToSession(transactionId, sessionId, connectionInfo, handler);
-        });
+        JSONObject connectionInfo = origin.put("candidate", candidate);
+        janusClient.sendToSession(transactionId, sessionId, connectionInfo, handler);
+    }
+
+    public void sendCompleteIceGathering(Long sessionId, Long handleId){
+        String transactionId = UUID.randomUUID().toString();
+        JSONObject origin = new JSONObject().put(JANUS_JANUS, "trickle").put(JANUS_HANDLE_ID, handleId);
+        DoNothingHandler handler = new DoNothingHandler(transactionId, sessionId);
         janusClient.sendToSession(transactionId, sessionId, origin.put("candidate", new JSONObject().put("completed", true)), handler);
     }
 

@@ -17,7 +17,7 @@ public class WebRTCSignalingApp {
     public static void main(String[] args) {
         Javalin app = Javalin.create(config -> config.staticFiles.add("/public", Location.CLASSPATH))
                 .start(7070);
-        MessageHandler messageHandler = new MessageHandler(System.getProperty("janus_address","localhost:8188"));
+        MessageHandler messageHandler = new MessageHandler(System.getProperty("janus_address","127.0.0.1:8188"));
 
         app.ws("/signaling", ws -> {
             ws.onConnect(ctx -> {
