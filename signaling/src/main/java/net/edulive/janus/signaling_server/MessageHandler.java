@@ -9,6 +9,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -52,7 +53,7 @@ public class MessageHandler {
                 break;
             case "create_room":
                 long roomName = videoRoomAdaptor.createRoom(janusSessionId, sessionToHandle.get(janusSessionId));
-                context.send(new JSONObject().put("type","create_room_result").put("room_name", roomName));
+                context.send(new JSONObject().put("type", "create_room_result").put("room_name", roomName));
                 break;
             case "publish_stream":
                 handlePublishStream(context, json, janusSessionId);
@@ -68,6 +69,17 @@ public class MessageHandler {
                         streams);
                 context.send(result);
                 break;
+            case "connection_info_subscriber": {
+                if (!json.has("ice_candidate")) {
+                    break;
+                }
+
+                Long subscriberSession = publisherSessionToSubscriberSession.get(janusSessionId);
+                videoRoomAdaptor.sendConnectionInfo(subscriberSession,
+                        sessionToHandle.get(subscriberSession),
+                        json.getJSONObject("ice_candidate"));
+            }
+                break;
             case "connection_info":
                 if (!json.has("ice_candidate")) {
                     break;
@@ -76,6 +88,16 @@ public class MessageHandler {
                         sessionToHandle.get(janusSessionId),
                         json.getJSONObject("ice_candidate"));
                 break;
+            case "ice_complete_subscriber": {
+                Long subscriberSession = publisherSessionToSubscriberSession.get(janusSessionId);
+                videoRoomAdaptor.sendCompleteIceGathering(subscriberSession, sessionToHandle.get(subscriberSession));
+            }
+                break;
+            case "sdp_answer_subscriber": {
+                Long subscriberSession = publisherSessionToSubscriberSession.get(janusSessionId);
+                videoRoomAdaptor.sendViewerSDPAnswer(subscriberSession, sessionToHandle.get(subscriberSession), json.getString("sdp"), json.getLong("room_name"));
+            }
+            break;
             case "ice_complete":
                 videoRoomAdaptor.sendCompleteIceGathering(janusSessionId, sessionToHandle.get(janusSessionId));
                 break;
@@ -106,33 +128,45 @@ public class MessageHandler {
         context.send(result.toString());
     }
 
+    private Map<Long, Long> publisherSessionToSubscriberSession = new HashMap<>();
+    private Map<Long, Long> publisherSessionToPrivateId = new HashMap<>();
     private void handleJoinRoom(String user, WsMessageContext context, JSONObject json, Long janusSessionId) {
         if (!json.has("room_name") || !json.has("role"))
             return;
         if (json.get("role").equals("publisher")) {
-            context.send(videoRoomAdaptor.publisherJoinRoom(janusSessionId,
+            JSONObject jsonOutput = videoRoomAdaptor.publisherJoinRoom(janusSessionId,
                             sessionToHandle.get(janusSessionId),
                             json.getLong("room_name"),
                             json.has("display_name") ? json.getString("display_name") : user)
                     .put("type", "join_room_result")
-                            .put("role","publisher")
+                    .put("role", "publisher");
+            publisherSessionToPrivateId.put(janusSessionId, jsonOutput.getLong("private_id"));
+            context.send(jsonOutput
                     .toString());
         } else {
-            if(!json.has("feeds")){
-                context.send(new JSONObject().put("type","error").put("message","Need feedIds").toString());
+            if (!json.has("feeds")) {
+                context.send(new JSONObject().put("type", "error").put("message", "Need feedIds").toString());
                 return;
             }
-            int size = json.getJSONArray("feeds").length();
-            long[] feeds =  new long[size];
-            for(int i = 0; i<size; i++) {
-                feeds[i] = ((Long)json.getJSONArray("feeds").get(i)).longValue();
+            Long subscriberSession = publisherSessionToSubscriberSession.get(janusSessionId);
+            if (subscriberSession == null) {
+                subscriberSession = janusClient.createSession();
+                publisherSessionToSubscriberSession.put(janusSessionId, subscriberSession);
+                Long handleId = videoRoomAdaptor.attachToVideoRoom(subscriberSession);
+                sessionToHandle.put(subscriberSession, handleId);
             }
-            JSONObject messageResult = videoRoomAdaptor.subscriberJoinRoom(janusSessionId,
-                    sessionToHandle.get(janusSessionId),
+            int size = json.getJSONArray("feeds").length();
+            long[] feeds = new long[size];
+            for (int i = 0; i < size; i++) {
+                feeds[i] = ((Long) json.getJSONArray("feeds").get(i)).longValue();
+            }
+            JSONObject messageResult = videoRoomAdaptor.subscriberJoinRoom(subscriberSession,
+                    sessionToHandle.get(subscriberSession),
                     json.getLong("room_name"),
                     json.has("display_name") ? json.getString("display_name") : user,
-                    feeds);
-            messageResult.put("type", "join_room_result").put("role","subscriber");
+                    feeds,
+                    publisherSessionToPrivateId.get(janusSessionId));
+            messageResult.put("type", "join_room_result").put("role", "subscriber");
             context.send(messageResult.toString());
         }
     }

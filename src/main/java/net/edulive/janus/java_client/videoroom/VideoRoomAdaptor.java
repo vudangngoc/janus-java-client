@@ -76,14 +76,15 @@ public class VideoRoomAdaptor {
      * @param feederIds List of streams to subscribe
      * @return An SDP message from Janus
      */
-    public JSONObject subscriberJoinRoom(Long sessionId, Long handleId,long roomName, String displayName,long[] feederIds) {
+    public JSONObject subscriberJoinRoom(Long sessionId, Long handleId,long roomName, String displayName,long[] feederIds, Long privateId) {
         JSONArray streams = new JSONArray();
         for (long feederId : feederIds) {
-            streams.put(new JSONObject().put("feed", feederId));
+            streams.put(new JSONObject().put("feed", feederId).put("mid", "0"));
         }
         JSONObject message = new JSONObject()
                 .put(JANUS_REQUEST, "join")
                 .put("ptype", "subscriber")
+                .put("private_id", privateId)
                 .put("room", roomName)
                 .put("display", displayName);
         message.put("streams", streams);

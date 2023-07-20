@@ -36,7 +36,7 @@ public class TestMainFlow extends AbstractTestCase{
         System.out.println(joinRoomResult.toString());
         Long subscriberSessionId = client.createSession();
         Long subscriberHandleId = videoRoomAdaptor.attachToVideoRoom(subscriberSessionId);
-        videoRoomAdaptor.subscriberJoinRoom(subscriberSessionId,subscriberHandleId,roomName,"",new long[]{0L});
+        videoRoomAdaptor.subscriberJoinRoom(subscriberSessionId,subscriberHandleId,roomName,"",new long[]{0L}, 0l);
         videoRoomAdaptor.destroyRoom(sessionId,roomName,handleId);
     }
 }

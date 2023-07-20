@@ -12,21 +12,6 @@ $(document).ready(function () {
             'urls': 'stun:stun.l.google.com:19302'
           }]}
     );
-    // peerConnection.ontrack = function (event) {
-    //     console.log('onTrack')
-    //     remoteVideo.srcObject = event.streams[0];
-    // };
-    // peerConnection.ontrack = event => {
-    //     const stream = event.streams[0];
-    //     remoteVideo.srcObject = stream;
-    //     remoteVideo.play();
-    //     // const videoElement = document.querySelector('video');
-    //     // if ('srcObject' in videoElement) {
-    //     //     videoElement.srcObject = stream;
-    //     // } else {
-    //     //     videoElement.src = URL.createObjectURL(stream);
-    //     // }
-    // };
 
     peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
@@ -66,7 +51,75 @@ $(document).ready(function () {
             sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "ice_complete"}))
             break;
         }
-      });
+    });
+
+    var subscribePeerConnection = new RTCPeerConnection(
+        {'iceServers': [{
+            'urls': 'stun:stun.l.google.com:19302'
+          }]}
+    );
+    // peerConnection.ontrack = function (event) {
+    //     console.log('onTrack')
+    //     remoteVideo.srcObject = event.streams[0];
+    // };
+    subscribePeerConnection.ontrack = event => {
+        if(!event.streams)
+            return;
+        if(!event.track)
+            return;
+        const stream = event.streams[0];
+        remoteVideo.srcObject = stream;
+        remoteVideo.play();
+        $('#subscriberStreamStatus').removeClass('inactive').addClass('active')
+        $('#subscriberStreamStatus').html('Live')
+    //     // const videoElement = document.querySelector('video');
+    //     // if ('srcObject' in videoElement) {
+    //     //     videoElement.srcObject = stream;
+    //     // } else {
+    //     //     videoElement.src = URL.createObjectURL(stream);
+    //     // }
+    };
+
+    subscribePeerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+            sendToWebSocket(JSON.stringify({
+                "plugin": "video_room", "type": "connection_info_subscriber", "ice_candidate": event.candidate
+            }))
+        }
+    };
+
+    subscribePeerConnection.onnegotiationneeded = (event) => {
+        if (subscribePeerConnection.signalingState != "stable") return;
+        console.log("On Negotiation Need: " + JSON. stringify(event));
+    }
+
+    subscribePeerConnection.onicecandidateerror = (event) => {
+        console.log("On ICE Negotiation Failure: " + JSON. stringify(event));
+    }
+
+    subscribePeerConnection.onsignalingstatechange = (event) => {
+        console.log("On Signaling state change: " + JSON. stringify(event));
+    }
+
+    subscribePeerConnection.onconnectionstatechange  = (event) => {
+        console.log("On Conection state change: " + JSON. stringify(event));
+    }
+
+    subscribePeerConnection.addEventListener("icegatheringstatechange", (ev) => {
+        switch (subscribePeerConnection.iceGatheringState) {
+          case "new":
+            /* gathering is either just starting or has been reset */
+            break;
+          case "gathering":
+            /* gathering has begun or is ongoing */
+            break;
+          case "complete":
+            /* gathering has ended */
+            console.log("On Finish ICE gathering: " + JSON. stringify(ev));
+            sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "ice_complete_subscriber"}))
+            break;
+        }
+    });
     
     // Ẩn toàn bộ phần nội dung trừ phần nội dung của tab hiện tại
     $(".tabcontent:not(:first)").hide();
@@ -176,7 +229,13 @@ $(document).ready(function () {
             displayResult("Received message: " + event.data)
             switch (message.type) {
                 case "join_room_result":
-                    subcribeAPublisher(JSON.parse(event.data).publishers[0])
+                    var data = JSON.parse(event.data);
+                    if(data.role == "publisher"){
+                        subcribeAPublisher(data.publishers[0]); // subscribe existing stream
+                    } else {
+                        // handle answer for subscriber
+                        handleAnswerForSubscriber(data);
+                    }
                     break
                 case "publish_stream_result":
                     handleStartStreamResult(message)
@@ -191,6 +250,36 @@ $(document).ready(function () {
             console.log("Websocket closed.");
         };
     }
+    function handleAnswerForSubscriber(data){
+        if(data.sdp !== undefined){
+            var offer = new RTCSessionDescription({
+                sdp: data.sdp,
+                type: 'offer'
+            }
+            );
+            displayResult("Set remote description for remote video");
+
+            subscribePeerConnection.setRemoteDescription(offer)
+            .then(() => {
+                subscribePeerConnection.createAnswer()
+                .then((answer) => {
+                    displayResult("Set local description for remote video");
+                    subscribePeerConnection.setLocalDescription(answer)
+                    return answer
+                }).then((answer) => {
+                    displayResult("Send answer SDP for remote video");
+                    sendToWebSocket(JSON.stringify({
+                        "plugin": "video_room",
+                        "type": "sdp_answer_subscriber",
+                        "room_name": 1234,
+                        "sdp": answer.sdp
+                    }));
+                });
+            // })
+            
+        });
+    }
+}
     function subcribeAPublisher(publisher) {
         if(publisher){
             displayResult("Subscribing: " + JSON.stringify(publisher))
