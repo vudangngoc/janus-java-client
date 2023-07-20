@@ -130,7 +130,7 @@ public class JanusClient {
      * @return <code>true</code> if connect success
      */
     public boolean connect() {
-        transporter = new WSConnector(URI.create("ws://" + address), this, new NetworkEventHandler() {
+        transporter = new WSConnector(URI.create(address.startsWith("ws")? address : "ws://" + address), this, new NetworkEventHandler() {
 
             @Override
             public void onOpen(JSONObject message) {
