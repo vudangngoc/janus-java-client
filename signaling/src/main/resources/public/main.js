@@ -152,13 +152,24 @@ $(document).ready(function () {
     $('#joinRoom').on('click', function () {
         var name = $('#name').val();
         // connectToWebSocket();
-        sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "join_room", "room_name": 1234, "role": "publisher", "display_name": name }))
+        sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "join_room", "room_name": $('#room_name').val(), "role": "publisher", "display_name": name }))
+    })
+    $('#create_room').on('click', function () {
+        var name = $('#name').val();
+        // connectToWebSocket();
+        sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "create_room"}))
     })
     // Khi click vào nút Join Room with subscriber
     $('#joinRoomWithSub').on('click', function () {
         var name = $('#name').val();
         // connectToWebSocket();
         sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "join_room", "room_name": 1090575864348547, "role": "subscriber", "display_name": name }))
+    })
+    $('#stop-streaming-subscriber').on('click', function () {
+        subscriberLeftRoom()
+    })
+    $('#start-streaming-subscriber').on('click', function () {
+        subcribeAPublisher($('#current_id-subscriber').val())
     })
     // Bật camera và micro
     $("#start-streaming").on('click', function () {
@@ -196,6 +207,10 @@ $(document).ready(function () {
 
     // Tắt camera và micro
     $("#stop-streaming").on('click', function () {
+        sendToWebSocket(JSON.stringify({
+            "plugin": "video_room",
+            "type": "unpublish"
+        }));
         // Dừng stream
         window.localStream.getTracks().forEach(function (track) {
             track.stop();
@@ -227,19 +242,26 @@ $(document).ready(function () {
             console.log("Received message:", event.data);
             const message = JSON.parse(event.data);
             displayResult("Received message: " + event.data)
+            if(message.type == undefined){
+                // message from Janus server
+                handleEvent(message);
+            }
             switch (message.type) {
                 case "join_room_result":
-                    var data = JSON.parse(event.data);
-                    if(data.role == "publisher"){
-                        subcribeAPublisher(data.publishers[0]); // subscribe existing stream
+                    if(message.role == "publisher"){
+                        $('#current_id').val(message.id)
+                        subcribeAPublisher(message.publishers[0].id)
                     } else {
                         // handle answer for subscriber
-                        handleAnswerForSubscriber(data);
+                        handleAnswerForSubscriber(message);
                     }
                     break
                 case "publish_stream_result":
                     handleStartStreamResult(message)
                     break
+                case "create_room_result":
+                    handleCreateRoomResult(message)
+                    break   
             }
 
         };
@@ -250,6 +272,46 @@ $(document).ready(function () {
             console.log("Websocket closed.");
         };
     }
+
+    function handleEvent(event){
+        if(event.plugindata.plugin != undefined){
+            switch (event.plugindata.plugin) {
+                case "janus.plugin.videoroom":
+                    handleVideoRoomEvent(event.plugindata.data)
+                    break;
+            
+                default:
+                    break;
+            }
+        } else {
+            switch (event.janus) {
+                case "webrtcup":
+                    subscribeStream()
+                    break;
+                case "hangup":
+                    
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    function handleVideoRoomEvent(data){
+        displayResult("Handle VideoRoom event data: " + JSON.stringify(data));
+        if(data.publishers != undefined && data.publishers.length > 0){
+            subcribeAPublisher(data.publishers[data.publishers.length - 1].id)
+        }
+        if(data.unpublished != undefined && data.unpublished == $('#current_id-subscriber').val()){
+            subscriberLeftRoom()
+        }
+    }
+
+    function handleCreateRoomResult(message){
+        displayResult("Handle Create room result: " + JSON.stringify(message));
+        $('#room_name').val( message.room_name)
+    }
+
     function handleAnswerForSubscriber(data){
         if(data.sdp !== undefined){
             var offer = new RTCSessionDescription({
@@ -271,7 +333,7 @@ $(document).ready(function () {
                     sendToWebSocket(JSON.stringify({
                         "plugin": "video_room",
                         "type": "sdp_answer_subscriber",
-                        "room_name": 1234,
+                        "room_name": $('#room_name').val(),
                         "sdp": answer.sdp
                     }));
                 });
@@ -280,10 +342,14 @@ $(document).ready(function () {
         });
     }
 }
-    function subcribeAPublisher(publisher) {
-        if(publisher){
-            displayResult("Subscribing: " + JSON.stringify(publisher))
-            sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "join_room", "room_name": 1234, "role": "subscriber", "display_name": $('#name').val(), "feeds":[publisher.id] }))
+function subscriberLeftRoom(){
+    sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "leave_room_subscriber"}))
+}
+    function subcribeAPublisher(id) {
+        if(id){
+            $('#current_id-subscriber').val(id)
+            displayResult("Subscribing: " + id)
+            sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "join_room", "room_name": $('#room_name').val(), "role": "subscriber", "display_name": $('#name').val(), "feeds":[id] }))
         }
     }
     function handleStartStreamResult(message) {

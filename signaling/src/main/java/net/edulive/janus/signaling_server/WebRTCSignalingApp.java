@@ -22,7 +22,7 @@ public class WebRTCSignalingApp {
         );
         app.jettyServer().setServerHost("0.0.0.0");
         app.start(7070);
-        MessageHandler messageHandler = new MessageHandler(System.getProperty("janus_address", "wss://janus.conf.meetecho.com/ws"));
+        MessageHandler messageHandler = new MessageHandler(System.getProperty("janus_address", "localhost:8188"));
 
         app.ws("/signaling", ws -> {
             ws.onConnect(ctx -> {

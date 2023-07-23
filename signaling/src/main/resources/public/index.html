@@ -16,12 +16,19 @@
                 <label for="server">Server address:</label>
                 <input type="text" id="server" name="server" value="ws://localhost:7070/signaling"><br><br>
                 <label for="name">Name:</label>
-                <input type="text" id="name" name="name"><br><br>
-                <input type="submit" value="Connect">
-                <input type="button" id="joinRoom" value="Join Room as Publisher">
-                <input type="button" id="joinRoomWithSub" value="Join Room as Subscriber">
+                <input type="text" id="name" name="name"><input type="submit" value="Connect"><br><br>
+                <label for="room_name">Room Name:</label>
+                <input type="text" id="room_name" name="room_name" value="1234">
+                <input type="button" id="create_room" value="Create Room">
+                <input type="button" id="room_info" value="Get Room Info">
+                <input type="button" id="joinRoom" value="Join Room">
+                <input type="button" id="leave_room" value="Leave Room"><br><br>
                 <input type="button" id="start-streaming" value="Start Stream">
                 <input type="button" id="stop-streaming" value="Stop Stream">
+                <input type="text" id="current_id" name="current_id"><br><br>
+                <input type="button" id="start-streaming-subscriber" value="Start Stream Subscriber">
+                <input type="button" id="stop-streaming-subscriber" value="Stop Stream Subscriber">
+                <input type="text" id="current_id-subscriber" name="current_id-subscriber"><br><br>
                 <textarea style="height: 200px; width: 100%;" id="result" value=""></textarea>
 
             </form>

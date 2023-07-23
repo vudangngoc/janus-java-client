@@ -53,7 +53,7 @@ public class MessageHandler {
                 break;
             case "create_room":
                 long roomName = videoRoomAdaptor.createRoom(janusSessionId, sessionToHandle.get(janusSessionId));
-                context.send(new JSONObject().put("type", "create_room_result").put("room_name", roomName));
+                context.send(new JSONObject().put("type", "create_room_result").put("room_name", roomName).toString());
                 break;
             case "publish_stream":
                 handlePublishStream(context, json, janusSessionId);
@@ -67,7 +67,7 @@ public class MessageHandler {
                 JSONObject result = videoRoomAdaptor.subscriptStream(janusSessionId,
                         sessionToHandle.get(janusSessionId),
                         streams);
-                context.send(result);
+                context.send(result.toString());
                 break;
             case "connection_info_subscriber": {
                 if (!json.has("ice_candidate")) {
@@ -105,13 +105,17 @@ public class MessageHandler {
                 videoRoomAdaptor.stopPublishStream(janusSessionId, sessionToHandle.get(janusSessionId));
                 break;
             case "leave_room":
-                videoRoomAdaptor.leaveRoom(janusSessionId, sessionToHandle.get(janusSessionId));
+                videoRoomAdaptor.leaveRoom(janusSessionId, sessionToHandle.remove(janusSessionId));
+                break;
+            case "leave_room_subscriber":
+                Long subscriberSession = publisherSessionToSubscriberSession.remove(janusSessionId);
+                videoRoomAdaptor.leaveRoom(subscriberSession, sessionToHandle.remove(subscriberSession));
                 break;
             case "ping":
-                context.send(new JSONObject().put("type", "pong"));
+                context.send(new JSONObject().put("type", "pong").toString());
                 break;
             default:
-                context.send(new JSONObject().put("type", "error").put("error", "Unsupported message"));
+                context.send(new JSONObject().put("type", "error").put("error", "Unsupported message").toString());
         }
     }
 

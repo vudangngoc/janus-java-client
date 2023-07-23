@@ -79,7 +79,7 @@ public class VideoRoomAdaptor {
     public JSONObject subscriberJoinRoom(Long sessionId, Long handleId,long roomName, String displayName,long[] feederIds, Long privateId) {
         JSONArray streams = new JSONArray();
         for (long feederId : feederIds) {
-            streams.put(new JSONObject().put("feed", feederId).put("mid", "0"));
+            streams.put(new JSONObject().put("feed", feederId));
         }
         JSONObject message = new JSONObject()
                 .put(JANUS_REQUEST, "join")
