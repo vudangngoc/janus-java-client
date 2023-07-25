@@ -17,9 +17,10 @@ import static net.edulive.janus.java_client.JanusKeywords.JANUS_TRANSACTION;
 public class JanusClient {
     /**
      * Init a Janus client, but don't connect to the Janus server yet
+     *
      * @param messageCallback There are some Janus's messages don't have transactionId then Janus client cannot find
      *                        a handler to process. Those messages will forward to user's context
-     * @param address Address of Janus's websocket
+     * @param address         Address of Janus's websocket
      */
     public JanusClient(MessageCallback messageCallback, String address) {
         this.messageCallback = messageCallback;
@@ -46,13 +47,14 @@ public class JanusClient {
 
     /**
      * Send command to session
+     *
      * @param transactionId a random string that the client can use to match incoming messages from the Janus server
-     * @param sessionId Janus session ID of user
-     * @param data information about the command
-     * @param handler object will process returned messages
+     * @param sessionId     Janus session ID of user
+     * @param data          information about the command
+     * @param handler       object will process returned messages
      */
     public void sendToSession(String transactionId, Long sessionId, JSONObject data, JanusTransactionAbstractHandler handler) {
-        if(handler != null) {
+        if (handler != null) {
             this.transactionHandlers.put(transactionId, handler);
         }
         data.put(JANUS_TRANSACTION, transactionId)
@@ -63,9 +65,10 @@ public class JanusClient {
 
     /**
      * attach a Janus session to a plugin
-     * @param sessionId Janus session of user
+     *
+     * @param sessionId  Janus session of user
      * @param pluginName plugin will handle the command
-     * @param data data of command
+     * @param data       data of command
      * @return handleId of user in context of the plugin
      * @throws ExecutionException
      * @throws InterruptedException
@@ -74,10 +77,10 @@ public class JanusClient {
         data.put(JANUS_JANUS, "attach").put("plugin", pluginName);
         CompletableFuture<Long> result = new CompletableFuture<>();
         String transactionId = UUID.randomUUID().toString();
-        this.sendToSession(transactionId, sessionId, data, new JanusTransactionAbstractHandler<Long>(result,transactionId,sessionId) {
+        this.sendToSession(transactionId, sessionId, data, new JanusTransactionAbstractHandler<>(result, transactionId, sessionId) {
             @Override
             public boolean process(JSONObject janusMessage) {
-                if(janusMessage.getString(JANUS_JANUS).equals("success")) {
+                if (janusMessage.getString(JANUS_JANUS).equals("success")) {
                     this.getResult().complete(janusMessage.getJSONObject("data").getLong("id"));
                 } else {
                     this.getResult().cancel(true);
@@ -91,10 +94,10 @@ public class JanusClient {
     protected void onMessage(String message) {
         logger.info("Receive: {}", message);
         JSONObject incomeMessage = new JSONObject(message);
-        if(handleSpecialEvent(incomeMessage)){
+        if (handleSpecialEvent(incomeMessage)) {
             return;
         }
-        if(!incomeMessage.has(JANUS_TRANSACTION)){
+        if (!incomeMessage.has(JANUS_TRANSACTION)) {
             return;
         }
         String transactionId = incomeMessage.getString(JANUS_TRANSACTION);
@@ -110,16 +113,16 @@ public class JanusClient {
 
     private boolean handleSpecialEvent(JSONObject message) {
         String eventName = message.getString(JANUS_JANUS);
-        switch (eventName){
+        switch (eventName) {
             case "event":
-                if(message.has(JANUS_TRANSACTION)){
+                if (message.has(JANUS_TRANSACTION)) {
                     break;
                 }
             case "media": // Janus receive audio bytes event
             case "slowlink": // Janus cannot send NACKs to Peer
             case "hangup": // PeerConnection close
             case "webrtcup": // Janus connect successful
-                this.messageCallback.handle(message.getLong("session_id"),message.toString());
+                this.messageCallback.handle(message.getLong("session_id"), message.toString());
                 return true;
         }
         return false;
@@ -127,10 +130,11 @@ public class JanusClient {
 
     /**
      * Connect Janus client to Janus server
+     *
      * @return <code>true</code> if connect success
      */
     public boolean connect() {
-        transporter = new WSConnector(URI.create(address.startsWith("ws")? address : "ws://" + address), this, new NetworkEventHandler() {
+        transporter = new WSConnector(URI.create(address.startsWith("ws") ? address : "ws://" + address), this, new NetworkEventHandler() {
 
             @Override
             public void onOpen(JSONObject message) {
@@ -156,6 +160,7 @@ public class JanusClient {
 
     /**
      * Create a Janus session
+     *
      * @return sessionId of new Janus session
      */
     public Long createSession() {
@@ -173,7 +178,7 @@ public class JanusClient {
             this.sessionIdMap.add(sessionId);
             return sessionId;
         } catch (JSONException | InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+            logger.error("Error in createSession", e);
             Thread.currentThread().interrupt();
         }
         return 0L;
@@ -181,6 +186,7 @@ public class JanusClient {
 
     /**
      * Kill an exists Janus session
+     *
      * @param sessionId
      * @return
      */
@@ -194,7 +200,7 @@ public class JanusClient {
             this.sessionIdMap.remove(sessionToDestroy);
             return sessionToDestroy;
         } catch (JSONException | InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+            logger.error("Error in destroySession", e);
             Thread.currentThread().interrupt();
         }
         return 0L;
@@ -240,7 +246,7 @@ public class JanusClient {
                 try {
                     Thread.sleep(20000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    logger.error("Error while sleeping", e);
                     Thread.currentThread().interrupt();
                 }
             }

@@ -5,9 +5,9 @@ import java.util.concurrent.CompletableFuture;
 import net.edulive.janus.java_client.JanusTransactionAbstractHandler;
 import org.json.JSONObject;
 
-class SubcriberJoinRoomHandler extends JanusTransactionAbstractHandler<JSONObject> {
+class SubscriberJoinRoomHandler extends JanusTransactionAbstractHandler<JSONObject> {
 
-	public SubcriberJoinRoomHandler(CompletableFuture<JSONObject> futureJob, String transactionId, long sessionId) {
+	public SubscriberJoinRoomHandler(CompletableFuture<JSONObject> futureJob, String transactionId, long sessionId) {
 		super(futureJob, transactionId, sessionId);
 	}
 

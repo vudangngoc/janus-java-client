@@ -1,13 +1,9 @@
 package net.edulive.janus.java_client;
 
 import net.edulive.janus.java_client.videoroom.VideoRoomAdaptor;
-import org.json.JSONObject;
-import org.junit.*;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.testcontainers.containers.DockerComposeContainer;
-
-import java.io.File;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class TestMainFlow extends AbstractTestCase{
 
@@ -27,10 +23,11 @@ public class TestMainFlow extends AbstractTestCase{
     }
     @Test
     public void testVideoRoom(){
-
         VideoRoomAdaptor videoRoomAdaptor = new VideoRoomAdaptor(client);
         Long sessionId = client.createSession();
         Long handleId = videoRoomAdaptor.attachToVideoRoom(sessionId);
         System.out.printf(videoRoomAdaptor.getAllRooms(sessionId,handleId).toString());
+        videoRoomAdaptor.publisherJoinRoom(sessionId,handleId,1234, "janus-java-client");
+        videoRoomAdaptor.leaveRoom(sessionId,handleId);
     }
 }
