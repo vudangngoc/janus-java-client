@@ -52,7 +52,7 @@ $(document).ready(function () {
             break;
         }
     });
-
+    
     var subscribePeerConnection = new RTCPeerConnection(
         {'iceServers': [{
             'urls': 'stun:stun.l.google.com:19302'
@@ -158,6 +158,12 @@ $(document).ready(function () {
         var name = $('#name').val();
         // connectToWebSocket();
         sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "create_room"}))
+    })
+    $('#room_info').on('click', function () {
+        sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "room_info"}))
+    })
+    $('#leave_room').on('click', function () {
+        sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "leave_room"}))
     })
     // Khi click vào nút Join Room with subscriber
     $('#joinRoomWithSub').on('click', function () {

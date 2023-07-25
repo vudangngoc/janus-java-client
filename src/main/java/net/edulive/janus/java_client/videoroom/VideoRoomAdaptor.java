@@ -155,6 +155,39 @@ public class VideoRoomAdaptor {
      *
      * @param sessionId Janus sessionId of user
      * @param handleId Unique Id of user in the context of plugin, created when user attach to plugin
+     * @return A JSON represent all rooms with detail infor
+     */
+    public JSONObject getAllRooms(Long sessionId, Long handleId) {
+        JSONObject message = new JSONObject().put(JANUS_REQUEST,  "list");
+        JSONObject data = new JSONObject().put(JANUS_JANUS, JANUS_MESSAGE).put("body", message).put(JANUS_HANDLE_ID, handleId);
+        String transactionId = UUID.randomUUID().toString();
+        CompletableFuture<JSONObject> result = new CompletableFuture<>();
+        janusClient.sendToSession(transactionId, sessionId, data, new JanusTransactionAbstractHandler(result, transactionId, sessionId) {
+            @Override
+            public boolean process(JSONObject janusMessage) {
+                switch (janusMessage.getString("janus")) {
+                    case "ack":
+                        this.ack = true;
+                        return true;
+                    default:
+                        this.getResult().complete(janusMessage);
+                        return false;
+                }
+            }
+        });
+        try {
+            return result.get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            Thread.currentThread().interrupt();
+        }
+        return new JSONObject();
+    }
+
+    /**
+     *
+     * @param sessionId Janus sessionId of user
+     * @param handleId Unique Id of user in the context of plugin, created when user attach to plugin
      * @param sdp A message describe connection info
      * @return A SDP message from Janus
      */

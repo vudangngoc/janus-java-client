@@ -79,7 +79,7 @@ public class MessageHandler {
                         sessionToHandle.get(subscriberSession),
                         json.getJSONObject("ice_candidate"));
             }
-                break;
+            break;
             case "connection_info":
                 if (!json.has("ice_candidate")) {
                     break;
@@ -92,7 +92,7 @@ public class MessageHandler {
                 Long subscriberSession = publisherSessionToSubscriberSession.get(janusSessionId);
                 videoRoomAdaptor.sendCompleteIceGathering(subscriberSession, sessionToHandle.get(subscriberSession));
             }
-                break;
+            break;
             case "sdp_answer_subscriber": {
                 Long subscriberSession = publisherSessionToSubscriberSession.get(janusSessionId);
                 videoRoomAdaptor.sendViewerSDPAnswer(subscriberSession, sessionToHandle.get(subscriberSession), json.getString("sdp"), json.getLong("room_name"));
@@ -105,11 +105,20 @@ public class MessageHandler {
                 videoRoomAdaptor.stopPublishStream(janusSessionId, sessionToHandle.get(janusSessionId));
                 break;
             case "leave_room":
-                videoRoomAdaptor.leaveRoom(janusSessionId, sessionToHandle.remove(janusSessionId));
+                Long handleId = sessionToHandle.remove(janusSessionId);
+                if(handleId != null) {
+                    videoRoomAdaptor.leaveRoom(janusSessionId, handleId);
+                }
+                break;
+            case "room_info":
+                context.send(
+                        videoRoomAdaptor.getAllRooms(janusSessionId, sessionToHandle.remove(janusSessionId)
+                        ).toString());
                 break;
             case "leave_room_subscriber":
                 Long subscriberSession = publisherSessionToSubscriberSession.remove(janusSessionId);
-                videoRoomAdaptor.leaveRoom(subscriberSession, sessionToHandle.remove(subscriberSession));
+                if(subscriberSession != null)
+                    videoRoomAdaptor.leaveRoom(subscriberSession, sessionToHandle.remove(subscriberSession));
                 break;
             case "ping":
                 context.send(new JSONObject().put("type", "pong").toString());
@@ -134,6 +143,7 @@ public class MessageHandler {
 
     private Map<Long, Long> publisherSessionToSubscriberSession = new HashMap<>();
     private Map<Long, Long> publisherSessionToPrivateId = new HashMap<>();
+
     private void handleJoinRoom(String user, WsMessageContext context, JSONObject json, Long janusSessionId) {
         if (!json.has("room_name") || !json.has("role"))
             return;
