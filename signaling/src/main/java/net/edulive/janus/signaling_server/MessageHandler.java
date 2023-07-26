@@ -95,7 +95,13 @@ public class MessageHandler {
             break;
             case "sdp_answer_subscriber": {
                 Long subscriberSession = publisherSessionToSubscriberSession.get(janusSessionId);
-                videoRoomAdaptor.sendViewerSDPAnswer(subscriberSession, sessionToHandle.get(subscriberSession), json.getString("sdp"), json.getLong("room_name"));
+                String answerResult = videoRoomAdaptor.sendViewerSDPAnswer(
+                        subscriberSession,
+                        sessionToHandle.get(subscriberSession),
+                        json.getString("sdp"),
+                        json.getLong("room_name")
+                ).toString();
+                context.send(answerResult);
             }
             break;
             case "ice_complete":
@@ -106,7 +112,7 @@ public class MessageHandler {
                 break;
             case "leave_room":
                 Long handleId = sessionToHandle.remove(janusSessionId);
-                if(handleId != null) {
+                if (handleId != null) {
                     videoRoomAdaptor.leaveRoom(janusSessionId, handleId);
                 }
                 break;
@@ -117,7 +123,7 @@ public class MessageHandler {
                 break;
             case "leave_room_subscriber":
                 Long subscriberSession = publisherSessionToSubscriberSession.remove(janusSessionId);
-                if(subscriberSession != null)
+                if (subscriberSession != null)
                     videoRoomAdaptor.leaveRoom(subscriberSession, sessionToHandle.remove(subscriberSession));
                 break;
             case "ping":

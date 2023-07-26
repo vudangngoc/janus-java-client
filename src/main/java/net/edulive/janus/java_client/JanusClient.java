@@ -48,7 +48,7 @@ public class JanusClient {
     /**
      * Send command to session
      *
-     * @param transactionId a random string that the client can use to match incoming messages from the Janus server
+     * @param transactionId a random string that the client can use to match response messages from the Janus server
      * @param sessionId     Janus session ID of user
      * @param data          information about the command
      * @param handler       object will process returned messages

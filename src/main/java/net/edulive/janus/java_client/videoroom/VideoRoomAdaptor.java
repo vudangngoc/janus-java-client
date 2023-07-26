@@ -190,7 +190,7 @@ public class VideoRoomAdaptor {
     /**
      * @param sessionId Janus sessionId of user
      * @param handleId  Unique Id of user in the context of plugin, created when user attach to plugin
-     * @param sdp       A message describe connection info
+     * @param sdp       SDP offer describe connection info
      * @return A SDP message from Janus
      */
     public String startLive(Long sessionId, Long handleId, String sdp) {
@@ -241,17 +241,21 @@ public class VideoRoomAdaptor {
      * @param roomId    Unique room name
      * @return A SDP message
      */
-    public String sendViewerSDPAnswer(Long sessionId, Long handleId, String sdp, Long roomId) {
+    public JSONObject sendViewerSDPAnswer(Long sessionId, Long handleId, String sdp, Long roomId) {
         JSONObject body = new JSONObject().put(JANUS_REQUEST, "start").put("room", roomId);
         JSONObject jsep = new JSONObject().put("type", "answer").put("sdp", sdp);
         JSONObject data = new JSONObject().put(JANUS_JANUS, JANUS_MESSAGE).put(JANUS_HANDLE_ID, handleId).put("body", body).put("jsep", jsep);
         String transactionId = UUID.randomUUID().toString();
-        CompletableFuture<String> result = new CompletableFuture<>();
+        CompletableFuture<JSONObject> result = new CompletableFuture<>();
 
         janusClient.sendToSession(transactionId, sessionId, data, new JanusTransactionAbstractHandler<>(result, transactionId, sessionId) {
             @Override
             public boolean process(JSONObject janusMessage) {
-                this.futureJob.complete(janusMessage.toString()); // TODO should be just sdp message
+                if(janusMessage.getString("janus").equals("ack")){
+                    this.ack = true;
+                    return false;
+                }
+                this.futureJob.complete(janusMessage.getJSONObject("plugindata"));
                 return false;
             }
         });
@@ -261,7 +265,7 @@ public class VideoRoomAdaptor {
             logger.error("Error in sendViewerSDPAnswer", e);
             Thread.currentThread().interrupt();
         }
-        return "false";
+        return new JSONObject();
     }
 
     /**
@@ -286,18 +290,19 @@ public class VideoRoomAdaptor {
      * @param sessionId Janus sessionId of user
      * @param handleId  Unique Id of user in the context of plugin, created when user attach to plugin
      */
-    public void stopPublishStream(Long sessionId, Long handleId) {
+    public JSONObject stopPublishStream(Long sessionId, Long handleId) {
         JSONObject message = new JSONObject().put(JANUS_REQUEST, "unpublish");
         JSONObject data = new JSONObject().put(JANUS_JANUS, JANUS_MESSAGE).put("body", message).put(JANUS_HANDLE_ID, handleId);
         String transactionId = UUID.randomUUID().toString();
         CompletableFuture<JSONObject> result = new CompletableFuture<>();
         janusClient.sendToSession(transactionId, sessionId, data, new ViewerLeaveRoomHandler(result, transactionId, sessionId));
         try {
-            result.get().getLong("session_id");
+            return result.get();
         } catch (JSONException | InterruptedException | ExecutionException e) {
             logger.error("Error in stopPublishStream", e);
             Thread.currentThread().interrupt();
         }
+        return new JSONObject();
     }
 
     /**
