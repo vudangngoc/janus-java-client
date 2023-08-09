@@ -9,6 +9,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -115,11 +116,12 @@ public class MessageHandler {
                 if (handleId != null) {
                     videoRoomAdaptor.leaveRoom(janusSessionId, handleId);
                 }
+                context.closeSession();
                 break;
             case "room_info":
                 context.send(
-                        videoRoomAdaptor.getAllRooms(janusSessionId, sessionToHandle.remove(janusSessionId)
-                        ).toString());
+                        videoRoomAdaptor.getAllRooms(janusSessionId, sessionToHandle.get(janusSessionId)
+                        ).put("type", "room_info_result").toString());
                 break;
             case "leave_room_subscriber":
                 Long subscriberSession = publisherSessionToSubscriberSession.remove(janusSessionId);

@@ -8,35 +8,23 @@ This server is build for testing Java Janus client library, it isn't ready for p
 - Create room:
     - Input: {"plugin" : "video_room", "type" : "create_room"}
     - Output: {"room_name":1234}
+- Get rooms info:
+    - Input: {"plugin":"video_room","type":"room_info"}
+    - Output: {"videoroom":"success","list":[{...}],"type":"room_info_result"}
 - Join room as a publisher: user will be added to publisher of room
     - Input: {"plugin" : "video_room", "type" : "join_room", "room_name" : 1234, "role" : "publisher", "display_name" : "A display name"}
-    - Output: {
-      "videoroom": "joined",
-      "room": 1234,
-      "description": "Demo Room",
-      "id": 7103631288288938,
-      "private_id": 788383200,
-      "publishers": []
-      }
+    - Output: {"role":"publisher","videoroom":"joined","description":"Demo Room","publishers":[],"private_id":2790219919,"id":1995015638107375,"type":"join_room_result","room":1234}
 - Join room as a subscriber:
-    - Input: {"plugin" : "video_room", "type" : "join_room", "room_name" : 1234, "role" : "subscriber", "display_name" : "A display name", "feeds":[123,234]}
-    - Output:{
-      "videoroom": "joined",
-      "room": 1234,
-      "description": "Demo Room",
-      "id": 7103631288288938,
-      "private_id": 788383200,
-      "publishers": []
-      }
+    - Input: {"plugin":"video_room","type":"join_room","room_name":"1234","role":"subscriber","display_name":"b","feeds":[1995015638107375]}
+    - Output: {"role":"subscriber","type":"join_room_result","sdp":"..."}
 - Start a live video: send a SDP offer to start WebRTC connection, signaling server will return back a SDP answer
-    - Input: {"plugin" : "video_room", "type" : "publish_stream", "sdp" : "v=0 o=- 3532969134585152172 2 IN IP4 127.0.0.1 s=- t=0 0"}
-    - Output: {"sdp" : "v=0 o=- 3532969134585152172 2 IN IP4 217.61.26.125 s=VideoRoom 1234 t=0 0"}
+    - Input: {"plugin":"video_room","type":"publish_stream","sdp":"..."}
+    - Output: {"type":"publish_stream_result","sdp":"..."}
 - Send connection information (ICE candidate gathering)
-    - Input: {"plugin" : "video_room", "type" : "connection_info", "ice_candidate" : [{
-      "candidate": "candidate:1727282165 1 udp 2122260223 172.31.64.1 55071 typ host generation 0 ufrag UFaq network-id 1",
-      "sdpMid": "0",
-      "sdpMLineIndex": 0
-      }]}
+    - Input: {"plugin":"video_room","type":"connection_info","ice_candidate":{"candidate":"candidate:1218416269 1 udp 1686052607 14.248.68.107 50262 typ srflx raddr 192.168.0.158 rport 50262 generation 0 ufrag krCJ network-id 1 network-cost 10","sdpMid":"0","sdpMLineIndex":0,"usernameFragment":"krCJ"}}
+    - Output: N/A
+- Send finish ICE gathering
+    - Input: {"plugin":"video_room","type":"ice_complete"}
     - Output: N/A
 - Subscribe a publisher stream: After join room, signaling server will return data of room which contain list of room publishers, a subscriber can choose which stream to view.
     - Input: {"plugin" : "video_room", "type" : "subscribe_stream", "streams": [123,234,345]}
@@ -45,7 +33,10 @@ This server is build for testing Java Janus client library, it isn't ready for p
     - Input: {"plugin" : "video_room", "type" : "leave_room"}
     - Output: N/A
 - Keep Websocket alive:
-    - Input: {"type" : "ping"}
-    - Output: {"type" : "pong"}
+    - Input: N/A
+    - Output: {"type":"keep_alive"}
 
 To run the server, build it with maven by "mvn clean package -DskipTests" then run "java -jar target/java_client-[version]-jar-with-dependencies.jar"
+Then access to URL http://localhost:7070/ you'll get a test page 
+- For publisher: Fill a name --> click Connect --> click Join Room --> click Start Stream
+- For subscriber: Fill a name --> click Connect --> click Join Room, test page will automatically play available stream

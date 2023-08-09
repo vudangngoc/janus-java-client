@@ -15,9 +15,11 @@ $(document).ready(function () {
 
     peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
-            sendToWebSocket(JSON.stringify({
+            var message = JSON.stringify({
                 "plugin": "video_room", "type": "connection_info", "ice_candidate": event.candidate
-            }))
+            });
+            displayResult("Publisher send ICE candidate: " + message);
+            sendToWebSocket(message)
         }
     };
 
@@ -48,7 +50,9 @@ $(document).ready(function () {
           case "complete":
             /* gathering has ended */
             console.log("On Finish ICE gathering: " + JSON. stringify(ev));
-            sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "ice_complete"}))
+            var message = JSON.stringify({ "plugin": "video_room", "type": "ice_complete"});
+            displayResult("Publisher finish ICE gathering: " + message);
+            sendToWebSocket(message)
             break;
         }
     });
@@ -69,9 +73,18 @@ $(document).ready(function () {
             return;
         const stream = event.streams[0];
         remoteVideo.srcObject = stream;
-        remoteVideo.play();
-        $('#subscriberStreamStatus').removeClass('inactive').addClass('active')
-        $('#subscriberStreamStatus').html('Live')
+        var playPromise = remoteVideo.play();
+        if (playPromise !== undefined) {
+            playPromise.then(_ => {
+                $('#subscriberStreamStatus').removeClass('inactive').addClass('active')
+                $('#subscriberStreamStatus').html('Live')
+            })
+            .catch(error => {
+              // Auto-play was prevented
+              // Show paused UI.
+            });
+          }
+        
     //     // const videoElement = document.querySelector('video');
     //     // if ('srcObject' in videoElement) {
     //     //     videoElement.srcObject = stream;
@@ -82,9 +95,9 @@ $(document).ready(function () {
 
     subscribePeerConnection.onicecandidate = (event) => {
         if (event.candidate) {
-            sendToWebSocket(JSON.stringify({
-                "plugin": "video_room", "type": "connection_info_subscriber", "ice_candidate": event.candidate
-            }))
+            var message = JSON.stringify({"plugin": "video_room", "type": "connection_info_subscriber", "ice_candidate": event.candidate});
+            displayResult("Subscriber send ICE candidate: " + message);
+            sendToWebSocket(message)
         }
     };
 
@@ -116,7 +129,9 @@ $(document).ready(function () {
           case "complete":
             /* gathering has ended */
             console.log("On Finish ICE gathering: " + JSON. stringify(ev));
-            sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "ice_complete_subscriber"}))
+            var message = JSON.stringify({ "plugin": "video_room", "type": "ice_complete_subscriber"});
+            displayResult("Subscriber finish ICE gathering: " + message);
+            sendToWebSocket(message)
             break;
         }
     });
@@ -152,24 +167,25 @@ $(document).ready(function () {
     $('#joinRoom').on('click', function () {
         var name = $('#name').val();
         // connectToWebSocket();
-        sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "join_room", "room_name": $('#room_name').val(), "role": "publisher", "display_name": name }))
+        var message = JSON.stringify({ "plugin": "video_room", "type": "join_room", "room_name": $('#room_name').val(), "role": "publisher", "display_name": name });
+        displayResult("Publisher join room: " + message);
+        sendToWebSocket(message)
     })
     $('#create_room').on('click', function () {
         var name = $('#name').val();
-        // connectToWebSocket();
-        sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "create_room"}))
+        var message = JSON.stringify({ "plugin": "video_room", "type": "create_room"});
+        displayResult("Create room: " + message);
+        sendToWebSocket(message)
     })
     $('#room_info').on('click', function () {
-        sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "room_info"}))
+        var message = JSON.stringify({ "plugin": "video_room", "type": "room_info"});
+        displayResult("Get rooms info: " + message);
+        sendToWebSocket(message)
     })
     $('#leave_room').on('click', function () {
-        sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "leave_room"}))
-    })
-    // Khi click vào nút Join Room with subscriber
-    $('#joinRoomWithSub').on('click', function () {
-        var name = $('#name').val();
-        // connectToWebSocket();
-        sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "join_room", "room_name": 1090575864348547, "role": "subscriber", "display_name": name }))
+        var message = JSON.stringify({ "plugin": "video_room", "type": "leave_room"});
+        displayResult("Publisher leave room: " + message);
+        sendToWebSocket(message)
     })
     $('#stop-streaming-subscriber').on('click', function () {
         subscriberLeftRoom()
@@ -199,12 +215,14 @@ $(document).ready(function () {
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
 
-                // Gửi SDP offer đến server thông qua websocket
-                sendToWebSocket(JSON.stringify({
+                var outMessage = JSON.stringify({
                     "plugin": "video_room",
                     "type": "publish_stream",
                     "sdp": offer.sdp
-                }));
+                });
+                displayResult("Send SDP offer: " + outMessage);
+                // Gửi SDP offer đến server thông qua websocket
+                sendToWebSocket(outMessage);
             })
             .catch(function (err) {
                 console.log("Không thể bật camera hoặc micro: " + err.message);
@@ -213,10 +231,12 @@ $(document).ready(function () {
 
     // Tắt camera và micro
     $("#stop-streaming").on('click', function () {
-        sendToWebSocket(JSON.stringify({
+        var message = JSON.stringify({
             "plugin": "video_room",
             "type": "unpublish"
-        }));
+        });
+        displayResult("Publisher stop publish video stream: " + message);
+        sendToWebSocket(message);
         // Dừng stream
         window.localStream.getTracks().forEach(function (track) {
             track.stop();
@@ -256,7 +276,7 @@ $(document).ready(function () {
                 case "join_room_result":
                     if(message.role == "publisher"){
                         $('#current_id').val(message.id)
-                        subcribeAPublisher(message.publishers[0].id)
+                        subcribeAPublisher(message.publishers)
                     } else {
                         // handle answer for subscriber
                         handleAnswerForSubscriber(message);
@@ -335,13 +355,14 @@ $(document).ready(function () {
                     subscribePeerConnection.setLocalDescription(answer)
                     return answer
                 }).then((answer) => {
-                    displayResult("Send answer SDP for remote video");
-                    sendToWebSocket(JSON.stringify({
+                    var message = JSON.stringify({
                         "plugin": "video_room",
                         "type": "sdp_answer_subscriber",
                         "room_name": $('#room_name').val(),
                         "sdp": answer.sdp
-                    }));
+                    });
+                    displayResult("Send answer SDP for remote video: " + message);
+                    sendToWebSocket(message);
                 });
             // })
             
@@ -349,13 +370,17 @@ $(document).ready(function () {
     }
 }
 function subscriberLeftRoom(){
-    sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "leave_room_subscriber"}))
+    var message = JSON.stringify({ "plugin": "video_room", "type": "leave_room_subscriber"})
+    displayResult("subscriber left room: " + message)
+    sendToWebSocket(message)
 }
-    function subcribeAPublisher(id) {
-        if(id){
-            $('#current_id-subscriber').val(id)
-            displayResult("Subscribing: " + id)
-            sendToWebSocket(JSON.stringify({ "plugin": "video_room", "type": "join_room", "room_name": $('#room_name').val(), "role": "subscriber", "display_name": $('#name').val(), "feeds":[id] }))
+    function subcribeAPublisher(publishers) {
+        if(publishers && publishers.length > 0){
+            
+            var feeds = publishers.map(p => p.id)
+            var message = JSON.stringify({ "plugin": "video_room", "type": "join_room", "room_name": $('#room_name').val(), "role": "subscriber", "display_name": $('#name').val(), "feeds":feeds });
+            displayResult("Subscribing: " + message)
+            sendToWebSocket(message)
         }
     }
     function handleStartStreamResult(message) {

@@ -174,7 +174,7 @@ public class VideoRoomAdaptor {
                     this.ack = true;
                     return true;
                 }
-                this.getResult().complete(janusMessage);
+                this.getResult().complete(janusMessage.getJSONObject("plugindata").getJSONObject("data"));
                 return false;
             }
         });
