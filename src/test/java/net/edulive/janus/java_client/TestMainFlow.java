@@ -1,5 +1,7 @@
 package net.edulive.janus.java_client;
 
+import dev.onvoid.webrtc.RTCPeerConnection;
+import net.edulive.janus.java_client.textroom.TextRoomAdaptor;
 import net.edulive.janus.java_client.videoroom.VideoRoomAdaptor;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -16,7 +18,7 @@ public class TestMainFlow extends AbstractTestCase{
             e.printStackTrace();
         }
     }
-    private static JanusClient client = new JanusClient((sessionId,message) ->  true,"wss://janus.conf.meetecho.com/ws");
+    private static JanusClient client = new JanusClient((sessionId,message) ->  true,"ws://125.212.229.11:8188/ws");
     @AfterClass
     public static void shutdown() {
         client.close();
@@ -29,5 +31,17 @@ public class TestMainFlow extends AbstractTestCase{
         System.out.printf(videoRoomAdaptor.getAllRooms(sessionId,handleId).toString());
         videoRoomAdaptor.publisherJoinRoom(sessionId,handleId,1234, "janus-java-client");
         videoRoomAdaptor.leaveRoom(sessionId,handleId);
+    }
+
+    @Test
+    public void testTextRoom(){
+        TextRoomAdaptor textRoomAdaptor = new TextRoomAdaptor(client);
+        Long sessionId = client.createSession();
+        Long handleId = textRoomAdaptor.attachToTextRoom(sessionId);
+
+        RTCPeerConnection connection = client.setupConnection(sessionId,handleId);
+//        System.out.printf(videoRoomAdaptor.getAllRooms(sessionId,handleId).toString());
+//        videoRoomAdaptor.publisherJoinRoom(sessionId,handleId,1234, "janus-java-client");
+//        videoRoomAdaptor.leaveRoom(sessionId,handleId);
     }
 }
