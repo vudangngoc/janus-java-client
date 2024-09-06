@@ -18,7 +18,7 @@ public class TestMainFlow extends AbstractTestCase{
             e.printStackTrace();
         }
     }
-    private static JanusClient client = new JanusClient((sessionId,message) ->  true,"ws://125.212.229.11:8188/ws");
+    private static JanusClient client = new JanusClient((sessionId,message) ->  true,"ws://159.65.129.9:8188/ws");
     @AfterClass
     public static void shutdown() {
         client.close();
@@ -40,6 +40,12 @@ public class TestMainFlow extends AbstractTestCase{
         Long handleId = textRoomAdaptor.attachToTextRoom(sessionId);
 
         RTCPeerConnection connection = client.setupConnection(sessionId,handleId);
+
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 //        System.out.printf(videoRoomAdaptor.getAllRooms(sessionId,handleId).toString());
 //        videoRoomAdaptor.publisherJoinRoom(sessionId,handleId,1234, "janus-java-client");
 //        videoRoomAdaptor.leaveRoom(sessionId,handleId);

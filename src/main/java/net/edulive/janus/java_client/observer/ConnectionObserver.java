@@ -1,52 +1,68 @@
-package net.edulive.janus.java_client;
+package net.edulive.janus.java_client.observer;
 
 import dev.onvoid.webrtc.*;
 import dev.onvoid.webrtc.media.MediaStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ConnectionObserver implements PeerConnectionObserver {
+    private static final Logger logger = LoggerFactory.getLogger(ConnectionObserver.class);
     @Override
     public void onSignalingChange(RTCSignalingState state) {
-        PeerConnectionObserver.super.onSignalingChange(state);
+        System.out.println("Signaling state changed: " + state);
     }
 
     @Override
     public void onConnectionChange(RTCPeerConnectionState state) {
-        PeerConnectionObserver.super.onConnectionChange(state);
+        System.out.println("Connection state changed: " + state);
     }
 
     @Override
     public void onIceConnectionChange(RTCIceConnectionState state) {
-        PeerConnectionObserver.super.onIceConnectionChange(state);
+        System.out.println("Ice connection state changed: " + state);
     }
 
     @Override
     public void onStandardizedIceConnectionChange(RTCIceConnectionState state) {
-        PeerConnectionObserver.super.onStandardizedIceConnectionChange(state);
+        System.out.println("Standardized ice connection state changed: " + state);
     }
 
     @Override
     public void onIceConnectionReceivingChange(boolean receiving) {
-        PeerConnectionObserver.super.onIceConnectionReceivingChange(receiving);
+        System.out.println("Ice connection receiving changed: " + receiving);
     }
 
     @Override
     public void onIceGatheringChange(RTCIceGatheringState state) {
-        PeerConnectionObserver.super.onIceGatheringChange(state);
+        System.out.println("Ice gathering state changed: " + state);
     }
 
     @Override
-    public void onIceCandidate(RTCIceCandidate rtcIceCandidate) {
+    public void onIceCandidate(RTCIceCandidate iceCandidate) {
+        System.out.println("Ice candidate: " + iceCandidate);
+        if (iceCandidate == null) return;
 
+        final String candidate = String.format(
+                "{\"sdpMid\":\"%s\", \"sdpMLineIndex\":%d, \"candidate\":\"%s\"}",
+                iceCandidate.sdpMid,
+                iceCandidate.sdpMLineIndex,
+                iceCandidate.sdp
+        );
+
+
+        final String payload = String.format("{\"message\":\"icecandidate\",\"candidate\":%s}", candidate);
+
+        //sendMessage(payload);
     }
 
     @Override
     public void onIceCandidateError(RTCPeerConnectionIceErrorEvent event) {
-        PeerConnectionObserver.super.onIceCandidateError(event);
+        System.out.println("Ice candidate error: " + event);
     }
 
     @Override
     public void onIceCandidatesRemoved(RTCIceCandidate[] candidates) {
-        PeerConnectionObserver.super.onIceCandidatesRemoved(candidates);
+        System.out.println("Ice candidates removed: " + candidates);
     }
 
     @Override
@@ -61,7 +77,7 @@ public class ConnectionObserver implements PeerConnectionObserver {
 
     @Override
     public void onDataChannel(RTCDataChannel dataChannel) {
-        PeerConnectionObserver.super.onDataChannel(dataChannel);
+        System.out.println("Data channel: " + dataChannel);
     }
 
     @Override
