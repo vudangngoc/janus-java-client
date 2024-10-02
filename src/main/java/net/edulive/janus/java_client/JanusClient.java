@@ -6,10 +6,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import dev.onvoid.webrtc.*;
-import net.edulive.janus.java_client.observer.ConnectionObserver;
-import net.edulive.janus.java_client.observer.CreateSessionDescriptionObserver;
-import net.edulive.janus.java_client.observer.SessionObserver;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -222,59 +218,6 @@ public class JanusClient {
     public void close() {
         this.watchDog.setShouldStop(true);
         this.transporter.close();
-    }
-
-    public RTCPeerConnection setupConnection(Long sessionId, Long handleId) {
-        JSONObject data = new JSONObject().put(JANUS_JANUS, "message")
-                .put("handle_id", handleId);
-        JSONObject body = new JSONObject().put("request", "setup");
-        data.put("body", body);
-        String transactionId = UUID.randomUUID().toString();
-        CompletableFuture<JSONObject> result = new CompletableFuture<>();
-        this.sendToSession(transactionId, sessionId, data, new JanusTransactionAbstractHandler<>(result, transactionId, sessionId) {
-            @Override
-            public boolean process(JSONObject janusMessage) {
-                if(janusMessage.getString(JANUS_JANUS).equals("ack")) {
-                    return true;
-                }
-                if (janusMessage.getString(JANUS_JANUS).equals("event")) {
-                    this.getResult().complete(janusMessage.getJSONObject("jsep"));
-                } else {
-                    this.getResult().cancel(true);
-                }
-                return false;
-            }
-        });
-        try {
-            String sdpOffer = result.get().getString("sdp");
-            RTCConfiguration var1 = new RTCConfiguration();
-            var1.iceServers = new ArrayList<>();
-            RTCIceServer var3 = new RTCIceServer();
-            var3.urls = new ArrayList<>();
-            var3.urls.add("stun:stun.l.google.com:19302");
-            var1.iceServers.add(var3);
-            var1.iceTransportPolicy = RTCIceTransportPolicy.ALL;
-            PeerConnectionObserver var2 = new ConnectionObserver();
-            RTCPeerConnection connection =new  PeerConnectionFactory().createPeerConnection(var1, var2);
-            CompletableFuture<Boolean> future = new CompletableFuture<>();
-            connection.setRemoteDescription(new RTCSessionDescription(RTCSdpType.OFFER, sdpOffer), new SessionObserver(future));
-            if(future.get()) {
-                connection.createAnswer(new RTCAnswerOptions(), new CreateSessionDescriptionObserver(this, sessionId, handleId));
-                connection.restartIce();
-            }
-            RTCDataChannelInit options = new RTCDataChannelInit();
-            options.protocol = "app-protocol";
-            options.maxPacketLifeTime = 5000;
-            RTCDataChannel channel = connection.createDataChannel("dc", options);
-            channel.send(new RTCDataChannelBuffer(ByteBuffer.wrap("Hello".getBytes()), false));
-
-//            logger.info(connection.getLocalDescription().sdp);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return null;
     }
 
     private static class WatchDog implements Runnable {
