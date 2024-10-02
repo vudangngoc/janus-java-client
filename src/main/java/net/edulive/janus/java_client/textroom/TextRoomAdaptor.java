@@ -40,13 +40,14 @@ public class TextRoomAdaptor {
         }
     }
 
-    public JSONArray getRooms() {
+    public JSONArray getRooms(Long sessionId) {
         logger.debug("Get rooms");
         JSONObject data = new JSONObject().put(JANUS_JANUS, "message")
+                .put("handle_id",handleId)
                 .put("body", new JSONObject().put("request", "list"));
         String transactionId = UUID.randomUUID().toString();
         CompletableFuture<JSONArray> result = new CompletableFuture<>();
-        janusClient.sendToSession(transactionId, handleId, data, new GetRoomsHandler(result, transactionId, handleId));
+        janusClient.sendToSession(transactionId, sessionId, data, new GetRoomsHandler(result, transactionId, handleId));
         try {
             logger.info(result.get().toString());
             return result.get();

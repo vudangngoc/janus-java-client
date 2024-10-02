@@ -13,6 +13,14 @@ public class GetRoomsHandler extends JanusTransactionAbstractHandler {
 
     @Override
     public boolean process(JSONObject janusMessage) {
+        if(janusMessage.getString("janus").equals("success")){
+            JSONObject data = janusMessage.getJSONObject("plugindata").getJSONObject("data");
+            if(data.getString("textroom").equals("success")){
+                this.getResult().complete(data.getJSONArray("list"));
+                return false;
+            }
+        }
+        this.getResult().complete(new JSONArray());
         return false;
     }
 }

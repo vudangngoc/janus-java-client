@@ -2,6 +2,7 @@ package net.edulive.janus.java_client;
 
 import net.edulive.janus.java_client.textroom.TextRoomAdaptor;
 import net.edulive.janus.java_client.videoroom.VideoRoomAdaptor;
+import org.json.JSONArray;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -38,7 +39,7 @@ public class TestMainFlow extends AbstractTestCase{
         Long sessionId = client.createSession();
         textRoomAdaptor.attachToTextRoom(sessionId);
 
-         textRoomAdaptor.getRooms();
-        assert true;
+        JSONArray array =  textRoomAdaptor.getRooms(sessionId);
+        assert !array.isEmpty();
     }
 }
